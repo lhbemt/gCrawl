@@ -14,7 +14,7 @@ func parseHtml(mainurl string, urls []string, node *html.Node)([]string) {
 				if bDirect {
 					urls = append(urls, attr.Val)
 				} else {
-					link := mainurl + attr.Val
+					link := mainurl + "/" + attr.Val
 					urls = append(urls, link)
 				}
 			}
