@@ -16,6 +16,8 @@ type urlsQueue struct {
 
 type GCrawl struct {
 	nRoutineCount int // routine count
+	header string // url header
+	keyword string // keyword to crawl
 	close chan interface{} // close signal
 	running bool
 	urls *urlsQueue // urlqueue
@@ -44,8 +46,9 @@ func (this *GCrawl) crawl() {
 				if !ok {
 					this.seenurls[url] = true
 					this.urls.queue = this.urls.queue[1:]
+					//fmt.Println(url)
 					this.urls.guard.Unlock()
-					geturls, err := gParseLinks.ParseLinks(url)
+					geturls, getResults, err := gParseLinks.ParseLinks(url, this.header, this.keyword)
 					if err != nil { // log
 						fmt.Printf("parse links: %s error: %s", url, err)
 						continue
@@ -57,10 +60,12 @@ func (this *GCrawl) crawl() {
 								//fmt.Println(link)
 								this.urls.queue = append(this.urls.queue, link)
 								this.urlready <- '1' // ready for parse
-								this.localRecord <- link
 							}
 						}
 						this.urls.guard.Unlock()
+						for _, result := range getResults {
+							this.localRecord <- result
+						}
 						continue
 					}
 				} else {
@@ -74,7 +79,7 @@ func (this *GCrawl) crawl() {
 	}
 }
 
-func (this *GCrawl) Work(mainUrl string) error {
+func (this *GCrawl) Work(mainUrl string, header string, keyword string) error {
 	if this.running {
 		return errors.New("crawl is working")
 	} else {
@@ -84,6 +89,8 @@ func (this *GCrawl) Work(mainUrl string) error {
 		this.seenurls = make(map[string]bool)
 		this.urlready = make(chan byte, 1000000)
 		this.localRecord = make(chan string, 1000)
+		this.header = header
+		this.keyword = keyword
 		for i := 0; i < this.nRoutineCount; i++ {
 			go this.crawl()
 		}
