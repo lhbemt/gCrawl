@@ -50,6 +50,7 @@ func ParseLinks(url string, header string, keyword string)([]string,[]string, er
 		return nil, nil, err
 	} else {
 		node, err2 := html.Parse(resp.Body)
+		defer resp.Body.Close()
 		if err2 != nil {
 			return nil, nil,  err2
 		} else {
